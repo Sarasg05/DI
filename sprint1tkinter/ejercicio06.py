@@ -7,7 +7,7 @@ def mostrar_selecciones():
 
 #Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 6")
+root.title("Ejercicio 6: Listbox")
 root.geometry("300x300")
 
 # Crear una lista de opciones

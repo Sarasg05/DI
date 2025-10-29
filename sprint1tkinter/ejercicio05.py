@@ -7,7 +7,7 @@ def cambiar_color():
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 5")
+root.title("Ejercicio 5: Radiobutton")
 root.geometry("300x200")
 
 # Crear una variable para los Radiobuttons

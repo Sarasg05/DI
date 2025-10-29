@@ -2,7 +2,7 @@ import tkinter as tk
 
 # Crear la ventana principal
 ventana = tk.Tk()
-ventana.title("Ejercicio 1 - Labels en Tkinter")
+ventana.title("Ejercicio 1: Label")
 ventana.geometry("300x200")  # tamaño de la ventana
 
 # Primera etiqueta: mensaje de bienvenida

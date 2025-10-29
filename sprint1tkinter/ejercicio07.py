@@ -23,7 +23,7 @@ def dibujar_circulo():
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 7")
+root.title("Ejercicio 7: Canvas")
 root.geometry("400x500")
 
 # Crear Canvas

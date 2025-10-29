@@ -12,7 +12,7 @@ def mostrar_ayuda():
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 9")
+root.title("Ejercicio 9: Menu")
 root.geometry("300x200")
 
 # Crear la barra de menú

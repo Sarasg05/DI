@@ -10,7 +10,7 @@ def borrar_texto():
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 8")
+root.title("Ejercicio 8: Frame")
 root.geometry("300x200")
 
 # Crear dos frame

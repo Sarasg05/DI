@@ -2,7 +2,7 @@ import tkinter as tk
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 2")
+root.title("Ejercicio 2: Button")
 root.geometry("300x200")
 
 

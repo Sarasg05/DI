@@ -2,7 +2,7 @@ import tkinter as tk
 
 # Crear la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 3")
+root.title("Ejercicio 3: Entry")
 root.geometry("300x200")
 
 def saludar():
