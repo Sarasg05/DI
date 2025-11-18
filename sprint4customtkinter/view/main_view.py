@@ -1,94 +1,109 @@
 import customtkinter as ctk
-from PIL import Image
+import tkinter
 
-class MainView(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.title("Registro de Usuarios")
-        self.geometry("500x400")
+class MainView:
+    def __init__(self, master):
+        self.master = master
 
-        # Panel izquierdo: lista de usuarios
-        self.frame_lista = ctk.CTkFrame(self)
-        self.frame_lista.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        # --- Barra de menú ---
+        self.menubar = tkinter.Menu(master)
+        master.config(menu=self.menubar)
+        self.menu_archivo = tkinter.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Archivo", menu=self.menu_archivo)
 
-        self.lista_usuarios = ctk.CTkTextbox(self.frame_lista, width=200)
-        self.lista_usuarios.pack(fill="both", expand=True)
+        # --- Layout principal: dos columnas ---
+        master.grid_rowconfigure(0, weight=1)
+        master.grid_columnconfigure(0, weight=1)
+        master.grid_columnconfigure(1, weight=2)
 
-        # Panel derecho: previsualización
-        self.frame_previsualizacion = ctk.CTkFrame(self)
-        self.frame_previsualizacion.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        # Recuadro "Usuario"
+        self.frame_usuarios = ctk.CTkFrame(master, corner_radius=10)
+        self.frame_usuarios.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self.frame_usuarios.grid_rowconfigure(1, weight=1)
 
-        self.label_previsualizacion = ctk.CTkLabel(self.frame_previsualizacion, text="Selecciona un usuario")
-        self.label_previsualizacion.pack(pady=20)
+        self.label_usuarios = ctk.CTkLabel(self.frame_usuarios, text="Usuario", font=ctk.CTkFont(size=16, weight="bold"))
+        self.label_usuarios.grid(row=0, column=0, pady=5)
 
-        # Botones
-        self.boton_agregar = ctk.CTkButton(self, text="Añadir")
-        self.boton_agregar.pack(side="bottom", pady=10)
+        self.lista_usuarios_scrollable = ctk.CTkScrollableFrame(self.frame_usuarios)
+        self.lista_usuarios_scrollable.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
 
-        self.boton_eliminar = ctk.CTkButton(self, text="Eliminar")
-        self.boton_eliminar.pack(side="bottom", pady=5)
+        self.btn_add_usuario = ctk.CTkButton(self.frame_usuarios, text="Añadir Usuario")
+        self.btn_add_usuario.grid(row=2, column=0, pady=5)
+
+        # Recuadro "Detalles del usuario"
+        self.frame_detalles = ctk.CTkFrame(master, corner_radius=10)
+        self.frame_detalles.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        self.frame_detalles.grid_rowconfigure(4, weight=1)
+
+        self.label_detalles_titulo = ctk.CTkLabel(self.frame_detalles, text="Detalles del Usuario", font=ctk.CTkFont(size=16, weight="bold"))
+        self.label_detalles_titulo.grid(row=0, column=0, pady=5)
+
+        self.label_nombre = ctk.CTkLabel(self.frame_detalles, text="Nombre: ")
+        self.label_nombre.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+
+        self.label_edad = ctk.CTkLabel(self.frame_detalles, text="Edad: ")
+        self.label_edad.grid(row=2, column=0, sticky="w", padx=5, pady=2)
+
+        self.label_genero = ctk.CTkLabel(self.frame_detalles, text="Género: ")
+        self.label_genero.grid(row=3, column=0, sticky="w", padx=5, pady=2)
+
+        self.avatar_label = ctk.CTkLabel(self.frame_detalles, text="")
+        self.avatar_label.grid(row=4, column=0, sticky="n", pady=10)
+
+    def actualizar_lista_usuarios(self, usuarios, on_seleccionar_callback):
+        # Limpia lista previa
+        for widget in self.lista_usuarios_scrollable.winfo_children():
+            widget.destroy()
+        for i, usuario in enumerate(usuarios):
+            btn = ctk.CTkButton(
+                self.lista_usuarios_scrollable,
+                text=usuario.nombre,
+                command=lambda idx=i: on_seleccionar_callback(idx)
+            )
+            btn.pack(fill="x", padx=5, pady=2)
+
+    def mostrar_detalles_usuario(self, usuario, avatar_image=None):
+        self.label_nombre.configure(text=f"Nombre: {usuario.nombre}")
+        self.label_edad.configure(text=f"Edad: {usuario.edad}")
+        self.label_genero.configure(text=f"Género: {usuario.genero}")
+        if avatar_image:
+            self.avatar_label.configure(image=avatar_image, text="")
+        else:
+            self.avatar_label.configure(image="", text="No hay avatar")
 
 
-class AltaUsuarioModal(ctk.CTkToplevel):
-    def __init__(self, master, on_guardar_callback):
-        super().__init__(master)
-        self.title("Añadir Usuario")
-        self.geometry("300x400")
-        self.grab_set()  # Modal
-        self.on_guardar = on_guardar_callback
 
-        # Nombre
-        ctk.CTkLabel(self, text="Nombre:").pack(pady=5)
-        self.entry_nombre = ctk.CTkEntry(self)
-        self.entry_nombre.pack(pady=5)
+class AddUserView:
+    def __init__(self, master, avatar_options):
+        self.window = ctk.CTkToplevel(master)
+        self.window.title("Añadir Nuevo Usuario")
+        self.window.geometry("300x400")
+        self.window.grab_set()  # Modal
 
-        # Edad
-        ctk.CTkLabel(self, text="Edad:").pack(pady=5)
-        self.scale_edad = ctk.CTkSlider(self, from_=0, to=100, number_of_steps=100)
-        self.scale_edad.pack(pady=5)
+        ctk.CTkLabel(self.window, text="Nombre:").pack(pady=5)
+        self.nombre_entry = ctk.CTkEntry(self.window)
+        self.nombre_entry.pack(pady=5)
 
-        # Género
-        ctk.CTkLabel(self, text="Género:").pack(pady=5)
-        self.var_genero = ctk.StringVar(value="Masculino")
-        frame_genero = ctk.CTkFrame(self)
-        frame_genero.pack(pady=5)
-        for g in ["Masculino", "Femenino", "Otro"]:
-            ctk.CTkRadioButton(frame_genero, text=g, variable=self.var_genero, value=g).pack(anchor="w")
+        ctk.CTkLabel(self.window, text="Edad:").pack(pady=5)
+        self.edad_entry = ctk.CTkEntry(self.window)
+        self.edad_entry.pack(pady=5)
 
-        # Selección de avatar
-        ctk.CTkLabel(self, text="Avatar:").pack(pady=5)
-        self.avatar_seleccionado = ctk.StringVar()
-        frame_avatar = ctk.CTkFrame(self)
-        frame_avatar.pack(pady=5)
+        ctk.CTkLabel(self.window, text="Género:").pack(pady=5)
+        self.genero_entry = ctk.CTkEntry(self.window)
+        self.genero_entry.pack(pady=5)
 
-        self.ctk_images = []  # Guardar referencia
-        avatars = ["assets/avatar1.png", "assets/avatar2.png", "assets/avatar3.png"]
-        for path in avatars:
-            img = ctk.CTkImage(Image.open(path), size=(64, 64))
-            self.ctk_images.append(img)
-            btn = ctk.CTkButton(frame_avatar, image=img, text="", width=70, height=70,
-                                command=lambda p=path: self.seleccionar_avatar(p))
-            btn.pack(side="left", padx=5)
+        ctk.CTkLabel(self.window, text="Avatar:").pack(pady=5)
+        self.avatar_var = ctk.StringVar(value=avatar_options[0])
+        self.avatar_menu = ctk.CTkOptionMenu(self.window, values=avatar_options, variable=self.avatar_var)
+        self.avatar_menu.pack(pady=5)
 
-        # Botón Guardar
-        ctk.CTkButton(self, text="Guardar", command=self.guardar).pack(pady=10)
+        self.guardar_button = ctk.CTkButton(self.window, text="Guardar")
+        self.guardar_button.pack(pady=20)
 
-    def seleccionar_avatar(self, path):
-        self.avatar_seleccionado.set(path)
-
-    def guardar(self):
-        nombre = self.entry_nombre.get().strip()
-        edad = int(self.scale_edad.get())
-        genero = self.var_genero.get()
-        avatar = self.avatar_seleccionado.get()
-
-        if not nombre:
-            ctk.CTkLabel(self, text="Nombre obligatorio", text_color="red").pack()
-            return
-        if not avatar:
-            ctk.CTkLabel(self, text="Selecciona un avatar", text_color="red").pack()
-            return
-
-        # Llamar callback del controlador
-        self.on_guardar(nombre, edad, genero, avatar)
-        self.destroy()
+    def get_data(self):
+        return {
+            "nombre": self.nombre_entry.get(),
+            "edad": self.edad_entry.get(),
+            "genero": self.genero_entry.get(),
+            "avatar": self.avatar_var.get()
+        }

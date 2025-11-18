@@ -1,111 +1,59 @@
-from model.usuario_model import GestorUsuarios, Usuario
-from view.main_view import MainView
-import customtkinter as ctk
-from tkinter import simpledialog
+from view.main_view import MainView, AddUserView
+from model.usuario_model import Usuario, GestorUsuarios
+from tkinter import messagebox
+from pathlib import Path
+from PIL import Image, ImageTk
 
 class AppController:
-    def __init__(self):
-        self.gestor = GestorUsuarios()
-        self.vista = MainView()
+    def __init__(self, master):
+        self.master = master
+        self.model = GestorUsuarios()
+        self.view = MainView(master)
 
-        # Conectar botones
-        self.vista.boton_agregar.configure(command=self.alta_usuario)
-        self.vista.boton_eliminar.configure(command=self.eliminar_usuario)
+        # Directorio assets y caché de imágenes
+        self.BASE_DIR = Path(__file__).resolve().parent.parent
+        self.ASSETS_PATH = self.BASE_DIR / "assets"
+        self.avatar_images = {}
 
-        # Inicializar lista
-        self.refrescar_lista()
+        # Conectar botón "Añadir usuario"
+        self.view.btn_add_usuario.configure(command=self.abrir_ventana_añadir)
 
-        self.vista.mainloop()
+        # Cargar datos de ejemplo y refrescar lista
+        self.refrescar_lista_usuarios()
 
-    def alta_usuario(self):
-        nombre = simpledialog.askstring("Nombre", "Ingresa el nombre:")
-        if not nombre:
-            return
-        edad = simpledialog.askinteger("Edad", "Ingresa la edad (0-100):", minvalue=0, maxvalue=100)
-        if edad is None:
-            return
-        genero = simpledialog.askstring("Género", "Ingresa género (masculino/femenino/otro):").lower()
-        if genero not in ["masculino", "femenino", "otro"]:
-            return
+    def refrescar_lista_usuarios(self):
+        usuarios = self.model.listar()
+        self.view.actualizar_lista_usuarios(usuarios, self.seleccionar_usuario)
 
-        usuario = Usuario(nombre, edad, genero)
+    def seleccionar_usuario(self, indice):
+        usuario = self.model.listar()[indice]
+        avatar_image = None
+        avatar_path = self.ASSETS_PATH / usuario.avatar
+        if avatar_path.exists():
+            img = Image.open(avatar_path).resize((100, 100))
+            avatar_image = ImageTk.PhotoImage(img)
+            self.avatar_images[usuario.nombre] = avatar_image  # Mantener referencia
+        self.view.mostrar_detalles_usuario(usuario, avatar_image)
+
+    def abrir_ventana_añadir(self):
+        avatar_options = [f.name for f in self.ASSETS_PATH.glob("*.png")]
+        self.add_view = AddUserView(self.master, avatar_options)
+        self.add_view.guardar_button.configure(command=lambda: self.añadir_usuario(self.add_view))
+
+    def añadir_usuario(self, add_view):
+        data = add_view.get_data()
         try:
-            self.gestor.añadir(usuario)
-            self.refrescar_lista()
-        except ValueError as e:
-            ctk.CTkMessageBox.show_error("Error", str(e))
+            edad = int(data["edad"])
+        except ValueError:
+            messagebox.showerror("Error", "Edad debe ser un número entero")
+            return
 
-    def eliminar_usuario(self):
-        # Por simplicidad eliminamos el último de la lista por ahora
-        if self.gestor.listar():
-            self.gestor.eliminar(len(self.gestor.listar()) - 1)
-            self.refrescar_lista()
-
-    def refrescar_lista(self):
-        self.vista.lista_usuarios.delete("0.0", "end")
-        for u in self.gestor.listar():
-            self.vista.lista_usuarios.insert("end", f"{u.nombre} - {u.edad} - {u.genero}\n")
-
-    class AltaUsuarioModal(ctk.CTkToplevel):
-        def __init__(self, master, on_guardar_callback):
-            super().__init__(master)
-            self.title("Añadir Usuario")
-            self.geometry("300x400")
-            self.grab_set()  # Modal
-            self.on_guardar = on_guardar_callback
-
-            # Nombre
-            ctk.CTkLabel(self, text="Nombre:").pack(pady=5)
-            self.entry_nombre = ctk.CTkEntry(self)
-            self.entry_nombre.pack(pady=5)
-
-            # Edad
-            ctk.CTkLabel(self, text="Edad:").pack(pady=5)
-            self.scale_edad = ctk.CTkSlider(self, from_=0, to=100, number_of_steps=100)
-            self.scale_edad.pack(pady=5)
-
-            # Género
-            ctk.CTkLabel(self, text="Género:").pack(pady=5)
-            self.var_genero = ctk.StringVar(value="Masculino")
-            frame_genero = ctk.CTkFrame(self)
-            frame_genero.pack(pady=5)
-            for g in ["Masculino", "Femenino", "Otro"]:
-                ctk.CTkRadioButton(frame_genero, text=g, variable=self.var_genero, value=g).pack(anchor="w")
-
-            # Selección de avatar
-            ctk.CTkLabel(self, text="Avatar:").pack(pady=5)
-            self.avatar_seleccionado = ctk.StringVar()
-            frame_avatar = ctk.CTkFrame(self)
-            frame_avatar.pack(pady=5)
-
-            self.ctk_images = []  # Guardar referencia
-            avatars = ["assets/avatar1.png", "assets/avatar2.png", "assets/avatar3.png"]
-            for path in avatars:
-                img = ctk.CTkImage(Image.open(path), size=(64, 64))
-                self.ctk_images.append(img)
-                btn = ctk.CTkButton(frame_avatar, image=img, text="", width=70, height=70,
-                                    command=lambda p=path: self.seleccionar_avatar(p))
-                btn.pack(side="left", padx=5)
-
-            # Botón Guardar
-            ctk.CTkButton(self, text="Guardar", command=self.guardar).pack(pady=10)
-
-        def seleccionar_avatar(self, path):
-            self.avatar_seleccionado.set(path)
-
-        def guardar(self):
-            nombre = self.entry_nombre.get().strip()
-            edad = int(self.scale_edad.get())
-            genero = self.var_genero.get()
-            avatar = self.avatar_seleccionado.get()
-
-            if not nombre:
-                ctk.CTkLabel(self, text="Nombre obligatorio", text_color="red").pack()
-                return
-            if not avatar:
-                ctk.CTkLabel(self, text="Selecciona un avatar", text_color="red").pack()
-                return
-
-            # Llamar callback del controlador
-            self.on_guardar(nombre, edad, genero, avatar)
-            self.destroy()
+        nuevo_usuario = Usuario(
+            nombre=data["nombre"],
+            edad=edad,
+            genero=data["genero"],
+            avatar=data["avatar"]
+        )
+        self.model.agregar_usuario(nuevo_usuario)
+        self.refrescar_lista_usuarios()
+        add_view.window.destroy()
